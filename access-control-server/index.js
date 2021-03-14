@@ -1,34 +1,16 @@
-const app = require('express')();
-const WebSocket = require('ws');
-const server = new WebSocket.Server({
-  host: '192.168.100.21',
-  port: 3000,
-});
+require('dotenv').config()
+const http = require('http');
 
-let socketRef;
-let sockets = [];
+const webSocketServer = require('./config/web-socket-server');
+const restServer = require('./config/rest-server');
 
-app.get('/test', (req, res) => {
-  const { query: { msg } } = req;
-  socketRef.send(msg);
-  return res.send('mensagem enviada')
-});
+const connectedSockets = [];
 
-server.on('connection', socket => {
-  socketRef = socket;
-  
-  console.log('conectou')
-  sockets.push(socket);
-  
-  socket.on('message', function(msg) {
-    sockets.forEach(s => s.send(msg));
-  });
+restServer.setRestServerUp(connectedSockets);
 
-  socket.on('close', function() {
-    sockets = sockets.filter(s => s !== socket);
-  });
-});
+const server = http.createServer(restServer.app);
+server.listen(3000, '192.168.100.57', () => {
+  console.log('ouvindo aqui');
+}); 
 
-app.listen(3001, '192.168.100.21', () => {
-  console.log('ouvindo aqui')
-})
+webSocketServer.setWebSocketSeverUp(server, connectedSockets);
