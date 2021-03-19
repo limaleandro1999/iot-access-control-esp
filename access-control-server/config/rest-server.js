@@ -9,7 +9,7 @@ function verifyJWT(req, res, next) {
   if (!token) return res.status(401).json({ auth: false, message: 'No token provided.' });
     
   jwt.verify(token, process.env.SECRET, function(err, decoded) {
-    if (err) return res.status(500).json({ auth: false, message: 'Failed to authenticate token.' });
+    if (err) return res.status(401).json({ auth: false, message: 'Failed to authenticate token.', reason: err.message });
     req.userId = decoded.id;
     return next();
   });
@@ -17,6 +17,10 @@ function verifyJWT(req, res, next) {
 
 exports.setRestServerUp = (sockets = []) => {
   app.use(bodyParser.json());
+  app.use((req, _res, next) => {
+    console.log(`=> ${req.method.toUpperCase()} - ${req.path}`);
+    return next();
+  });
 
   app.get('/test', (req, res) => {
     const { query: { msg } } = req;
@@ -47,8 +51,22 @@ exports.setRestServerUp = (sockets = []) => {
     }
 
     try {
-      const user = await db.select('username', 'id').from(TABLES.USERS).where('username', username).andWhere('password', password);
-      return res.json({ auth: true, token: jwt.sign({ id: user[0].id, username: user[0].username }, process.env.SECRET, { expiresIn: 3600 })});
+      const user = await db
+        .select('username', 'id')
+        .from(TABLES.USERS)
+        .where('username', username)
+        .andWhere('password', password);
+
+      return res.json({
+        auth: true,
+        expiresIn: 3600,
+        token: jwt.sign({ 
+          id: user[0].id, 
+          username: user[0].username
+        },
+        process.env.SECRET, 
+        { expiresIn: 3600 })
+      });
     } catch (error) {
       return res.status(500).json({ error });
     }
@@ -70,8 +88,16 @@ exports.setRestServerUp = (sockets = []) => {
     }
 
     try {
-      const accessDevice = await db.select('name', 'id').from(TABLES.ACCESS_DEVICES).where('uuid', uuid);
-      const result = await db.select('id').from(TABLES.USERS_ACCESS_DEVICES).where('user_id', userId).andWhere('access_device_id', accessDevice[0].id);
+      const accessDevice = await db
+        .select('name', 'id')
+        .from(TABLES.ACCESS_DEVICES)
+        .where('uuid', uuid);
+
+      const result = await db
+        .select('id')
+        .from(TABLES.USERS_ACCESS_DEVICES)
+        .where('user_id', userId)
+        .andWhere('access_device_id', accessDevice[0].id);
 
       if (!result.length) {
         socket.ref.send('unauthorized');
