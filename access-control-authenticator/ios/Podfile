@@ -10,6 +10,8 @@ target 'AccessControlAuthenticator' do
 
   pod 'react-native-ble-plx', :path => '../node_modules/react-native-ble-plx'
 
+  pod 'react-native-encrypted-storage', :path => '../node_modules/react-native-encrypted-storage'
+
   target 'AccessControlAuthenticatorTests' do
     inherit! :complete
     # Pods for testing

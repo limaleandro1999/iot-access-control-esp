@@ -8,7 +8,7 @@ exports.setWebSocketSeverUp = (httpServerRef, sockets = []) => {
 
   wss.on('connection', (socket, request) => {
     const urlObj = new URLSearchParams(request.url);
-    console.log('conectou', urlObj.get('/?uuid'));
+    console.log(`# A socket client has been connected. UUID: ${urlObj.get('/?uuid')}`);
     sockets.push({ ref: socket, uuid: urlObj.get('/?uuid') });
     
     socket.on('message', function(msg) {
